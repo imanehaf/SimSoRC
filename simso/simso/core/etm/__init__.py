@@ -1,15 +1,15 @@
 from .WCET import WCET
 from .ACET import ACET
 from .CacheModel import CacheModel
-from .FixedPenalty import FixedPenalty
 from .RandomCache import RandomCache
+from .FixedPenalty import FixedPenalty
 
 execution_time_models = {
     'wcet': WCET,
     'acet': ACET,
     'cache': CacheModel,
     'fixedpenalty': FixedPenalty,
-	'test' : RandomCache
+    'test' : RandomCache
 }
 
 execution_time_model_names = {
@@ -17,5 +17,5 @@ execution_time_model_names = {
     'ACET': 'acet',
     'Cache Model': 'cache',
     'Fixed Penalty': 'fixedpenalty',
-	'Random Cache' :'test'
+    'Random Cache' :'test'
 }

@@ -19,7 +19,7 @@ class TaskInfo(object):
     """
 
     def __init__(self, name, identifier, task_type, abort_on_miss, period,
-                 activation_date, n_instr, mix, stack_file, prd_file, wcet, acet,
+                 activation_date, n_instr, mix, stack_file, mt_file, wcet, acet,
                  et_stddev, deadline, base_cpi, followed_by,
                  list_activation_dates, preemption_cost, data):
         """
@@ -56,11 +56,11 @@ class TaskInfo(object):
         self._stack = None
         self._csdp = None
         self._stack_file = ''
-        self._prd = None
-        self._cprd = None
-        self._prd_file = ''
+        self._mt = None
+        self._rd = None
+        self._mt_file = ''
         self.set_stack_file(*stack_file)        
-        self.set_prd_file(*prd_file)
+        self.set_mt_file(*mt_file)
         self.deadline = deadline
         self.followed_by = followed_by
         self.abort_on_miss = abort_on_miss
@@ -76,13 +76,13 @@ class TaskInfo(object):
         """
         return self._csdp
     @property
-    def cprd(self):
-        """
-        Accumulated Stack Distance Profile. Used by the cache models instead of
-        the Stack Distance Profile for optimization matters.
-        """
-        return self._cprd
-        
+    def rd(self):
+        return self._rd
+       
+    @property
+    def mt(self):
+        return self._mt
+		
     @property
     def stack_file(self):
         """
@@ -91,11 +91,11 @@ class TaskInfo(object):
         return self._stack_file
     
     @property
-    def prd_file(self):
+    def mt_file(self):
         """
         Stack distance profile input file.
         """
-        return self._prd_file
+        return self._mt_file
         
 		
     def set_stack_file(self, stack_file, cur_dir):
@@ -110,17 +110,17 @@ class TaskInfo(object):
             except Exception as e:
                 print("set_stack_file failed:", e)
                 
-    def set_prd_file(self, prd_file, cur_dir):
+    def set_mt_file(self, mt_file, cur_dir):
         """
-        Set the stack distance profile.
+        Set the memory trace profile.
         """
-        if prd_file:
+        if mt_file:
             try:
-                self._prd = TaskInfo._parse_prd(prd_file)
-                self._cprd = RDP(self._prd)
-                self._prd_file = os.path.relpath(prd_file, cur_dir)             
+                self._mt = TaskInfo._parse_mt(mt_file)
+                self._rd = RDP(self._mt)
+                self._mt_file = os.path.relpath(mt_file, cur_dir)             
             except Exception as e:
-                print("set_stack_file failed:", e)
+                print("set_mt_file failed:", e)
 
     @staticmethod
     def _parse_stack(stack_file):
@@ -134,15 +134,15 @@ class TaskInfo(object):
         return stack
     
     @staticmethod
-    def _parse_prd(prd_file):
-        prd = {}
-        if prd_file and os.path.isfile(prd_file):
-            for line in open(prd_file):
-                dist, value = line.split()
-                prd[int(dist)] = int(value)
+    def _parse_mt(mt_file):
+        mt = []
+        if mt_file and os.path.isfile(mt_file):
+            for line in open(mt_file):
+                address = line.split()
+                mt.append(int(address[0]))
         else:
-            prd = None
-        return prd
+            mt = None
+        return mt
 
 
 class GenericTask(Process):
@@ -228,7 +228,15 @@ class GenericTask(Process):
     @property
     def csdp(self):
         return self._task_info.csdp
-
+    
+    @property
+    def rd(self):
+        return self._task_info.rd
+        
+    @property
+    def mt(self):
+        return self._task_info.mt
+        
     @property
     def preemption_cost(self):
         return self._task_info.preemption_cost

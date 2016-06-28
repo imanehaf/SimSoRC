@@ -110,11 +110,11 @@ class TasksTable(QTableWidget):
                         "List of Act. dates (ms)", "Deadline (ms)",
                         "WCET (ms)", "ACET (ms)", "ET Std Dev (ms)",
                         "Base CPI", "Instructions", "MIX",
-                        "Stack file", "PRD file", "Preemption cost", "Followed by"]
+                        "Stack file", "Memory Trace", "Preemption cost", "Followed by"]
 
         self._dict_header = dict(zip(['id','name','task_type','abort','activation_date',
 		'period','list_activation_dates', 'deadline' , 'wcet' , 'acet',
-		'et_stddev', 'base_cpi' , 'n_instr' , 'mix' , 'sdp','prd' , 
+		'et_stddev', 'base_cpi' , 'n_instr' , 'mix' , 'sdp','mt' , 
 		'preemption_cost' , 'followed' ], range(18)))
 
         self.refresh_table()
@@ -129,7 +129,7 @@ class TasksTable(QTableWidget):
             self._dict_header['n_instr'])
         self.horizontalHeader().hideSection(self._dict_header['mix'])
         self.horizontalHeader().hideSection(self._dict_header['sdp'])
-        self.horizontalHeader().hideSection(self._dict_header['prd'])
+        self.horizontalHeader().hideSection(self._dict_header['mt'])
         self.horizontalHeader().hideSection(self._dict_header['acet'])
         self.horizontalHeader().hideSection(self._dict_header['et_stddev'])
         self.horizontalHeader().hideSection(
@@ -149,7 +149,7 @@ class TasksTable(QTableWidget):
         elif etm == 'test':
             self.horizontalHeader().showSection(self._dict_header['base_cpi'])
             self.horizontalHeader().showSection(self._dict_header['n_instr'])
-            self.horizontalHeader().showSection(self._dict_header['prd'])
+            self.horizontalHeader().showSection(self._dict_header['mt'])
         self.resizeColumnsToContents()
 
     def refresh_table(self):
@@ -208,9 +208,9 @@ class TasksTable(QTableWidget):
         stack_item.setFlags(stack_item.flags() ^ (Qt.ItemIsEditable))
         self.setItem(row, self._dict_header['sdp'], stack_item)
         
-        prd_item = QTableWidgetItem(str(task.prd_file))
-        prd_item.setFlags(prd_item.flags() ^ (Qt.ItemIsEditable))
-        self.setItem(row, self._dict_header['prd'], prd_item)
+        mt_item = QTableWidgetItem(str(task.mt_file))
+        mt_item.setFlags(mt_item.flags() ^ (Qt.ItemIsEditable))
+        self.setItem(row, self._dict_header['mt'], mt_item)
 
         combo = QComboBox()
         combo.currentIndexChanged.connect(
@@ -238,12 +238,12 @@ class TasksTable(QTableWidget):
         self._manual_change = True
 
     def _cell_activated(self, row, col):
-        if col == self._dict_header['prd']:
-            name = QFileDialog.getOpenFileName(self, caption="Open PRD file")
+        if col == self._dict_header['mt']:
+            name = QFileDialog.getOpenFileName(self, caption="Open Memory Trace file")
             if name:
                 task = self._configuration.task_info_list[row]
-                task.set_prd_file(str(name), self._configuration.cur_dir)
-                self.item(row, col).setText(str(task.prd_file))
+                task.set_mt_file(str(name), self._configuration.cur_dir)
+                self.item(row, col).setText(str(task.mt_file))
         elif col == self._dict_header['sdp']:
             name = QFileDialog.getOpenFileName(self, caption="Open stack file")
             if name:
