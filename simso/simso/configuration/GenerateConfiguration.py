@@ -119,4 +119,6 @@ def generate_tasks(top, task_info_list, fields):
         if task.stack_file:
             # XXX: what if the path contain a non-ascii character?
             attrs['stack'] = str(task.stack_file)
+        if task.mt_file:
+            attrs['mt'] = str(task.mt_file)
         SubElement(tasks, 'task', attrs)

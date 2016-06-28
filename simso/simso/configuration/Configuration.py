@@ -96,6 +96,9 @@ class Configuration(object):
                 if task.stack_file:
                     task.set_stack_file(
                         old_dir + '/' + task.stack_file, self._cur_dir)
+                elif task.mt_file:
+                    task.set_mt_file(
+                        old_dir + '/' + task.mt_file, self._cur_dir)
 
             self._simulation_file = simulation_file
 
@@ -181,21 +184,21 @@ class Configuration(object):
                 "name must begins with a letter and must not contains any "\
                 "special character."
 
-            # Activation date >= 0:
+            # Activation date >= 0:
             assert task.activation_date >= 0, \
                 "Activation date must be positive."
 
             # Period >= 0:
             assert task.period >= 0, "Tasks' periods must be positives."
 
-            # Deadline >= 0:
+            # Deadline >= 0:
             assert task.deadline >= 0, "Tasks' deadlines must be positives."
 
             # N_instr >= 0:
             assert task.n_instr >= 0, \
                 "A number of instructions must be positive."
 
-            # WCET >= 0:
+            # WCET >= 0:
             assert task.wcet >= 0, "WCET must be positive."
 
             # ACET >= 0:
@@ -210,12 +213,19 @@ class Configuration(object):
                 "A mix must be positive and less or equal than 2.0"
 
             if self.etm == "cache":
-                # stack
+                # stack
                 assert task.stack_file, "A task needs a stack profile."
 
                 # stack ok
                 assert task.csdp, "Stack not found or empty."
+				
+            if self.etm == "test":
+                # memory trace
+                assert task.mt_file, "A task needs a memory trace profile."
 
+                # stack ok
+                assert task.rd, "Memory trace not found or empty."
+				
     def check_caches(self):
         for index, cache in enumerate(self._caches_list):
             # Id unique :
@@ -231,7 +241,7 @@ class Configuration(object):
             # Taille positive :
             assert cache.size >= 0, "A cache size must be positive."
 
-            # Access time >= 0:
+            # Access time >= 0:
             assert cache.access_time >= 0, "An access time must be positive."
 
     def get_hyperperiod(self):

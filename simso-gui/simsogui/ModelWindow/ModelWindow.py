@@ -60,7 +60,7 @@ class ModelWindow(QTabWidget):
                 self._configuration.check_processors()
             elif index == 3:
                 self._configuration.check_tasks()
-            elif index == 4 and self._configuration.etm == 'cache':
+            elif index == 4 and ((self._configuration.etm == 'cache')|(self._configuration.etm == 'test')):
                 self._configuration.check_caches()
             else:
                 return

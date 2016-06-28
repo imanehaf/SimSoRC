@@ -234,6 +234,7 @@ class TasksTable(QTableWidget):
         for task in self._configuration.task_info_list:
             self._manual_change = False
             self.item(row, self._dict_header['sdp']).setText(task.stack_file)
+            self.item(row, self._dict_header['mt']).setText(task.mt_file)
             row += 1
         self._manual_change = True
 
