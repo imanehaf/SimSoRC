@@ -87,7 +87,10 @@ def capacity_miss_random(rd, cache_size):
 def cpi_alone(task, cache_sizes, latencies):
     local_miss_rates = [capacity_miss_random(task.rd.prd, cache_size)
                   for cache_size in cache_sizes]
-
+    
+    # main memory 
+    local_miss_rates.append(0)
+    
     hit_rates = [0]*len(local_miss_rates)
     # previous miss ratio product
     mrp = 1.0
@@ -120,18 +123,22 @@ def calc_prds(caches, task, running_jobs):
 
 def compute_instructions(task, running_jobs, duration):
     caches = task.cpu.caches
-    latencies = [c.access_time for c in caches]
+    latencies = [c.access_time for c in caches] + [caches[-1].access_time + caches[-1].penalty]
     irds = calc_prds(caches, task, running_jobs) 
-    hit_rates = [capacity_miss_random(ird, cache.size) for (ird, cache) in zip(irds, caches)]
+    local_miss_rates = [capacity_miss_random(ird, cache.size)
+                  for (ird, cache) in zip(irds, caches)]
+    
+    # main memory 
+    local_miss_rates.append(0)
+    
+    hit_rates = [0]*len(local_miss_rates)
+    # previous miss ratio product
+    mrp = 1.0
+    for i, d in enumerate(local_miss_rates):
+        hit_rates[i] = mrp * (1 - d)
+        mrp *= d
+
     return duration / calc_cpi(hit_rates, latencies)
-
-def penalty_to_latency(penalty_memaccess, penalties):
-    latencies = penalties
-    for i in range(1, len(latencies)):
-        latencies[i] += latencies[i-1]                
-    latencies = [i+penalty_memaccess for i in latencies]
-
-    return latencies
    
 
 class RandomCache(AbstractExecutionTimeModel):
@@ -148,15 +155,17 @@ class RandomCache(AbstractExecutionTimeModel):
         self.penalty = {}
         self.was_running_on = {}
 
+
         # precompute cpi_alone for each task on each cpu
         for task in self.sim.task_list:
             for proc in self.sim.processors:
                 caches = proc.caches
                 
+                latencies = [c.access_time for c in caches] + [caches[-1].access_time + caches[-1].penalty]
                 task.set_cpi_alone(
                     proc,
                     cpi_alone(task, [c.size for c in caches], 
-                                [c.access_time for c in caches])
+                                latencies)
                 )
 
     def update(self):
