@@ -37,12 +37,14 @@ def getHit(reuse, N):
     Get hit probabilities using reuse distance and associativity.
     """
     Phit = []
-    for K in reuse:
+    for K in reuse.keys():
         if K<N:
             P = (1-1.0/N)**K
-            Phit.append(P)
+			for i in range(reuse[K]):
+				Phit.append(P)
         else:
-            Phit.append(0)
+			for i in range(reuse[K]):
+				Phit.append(0)
     return Phit
 
 def add_time_prob(time, cycles, prob, cyclesP):
@@ -92,7 +94,7 @@ def capacity_miss_random(rd, cache_size):
     # miss counts and prob.
     time = [0]
     prob = [1.0]
-    for j in range(len(rd)):
+    for j in range(len(Phit)):
         Nc = [0, 1]
         Pdf = [Phit[j], 1-Phit[j]]
         time, prob = add_time_prob(time, Nc, prob, Pdf)
@@ -108,7 +110,7 @@ def capacity_miss_random(rd, cache_size):
 
 
 def cpi_alone(task, cache_sizes, latencies):
-    local_miss_rates = [capacity_miss_random(task.rdp, cache_size)
+    local_miss_rates = [capacity_miss_random(task.prd, cache_size)
                   for cache_size in cache_sizes]
 
     hit_rates = [0]*len(local_miss_rates)
@@ -121,27 +123,28 @@ def cpi_alone(task, cache_sizes, latencies):
     return calc_cpi(hit_rates, latencies)
 
 
-def calc_rdps(caches, task, running_jobs):
+def calc_prds(caches, task, running_jobs):
     """
     Compute the interleaving reuse distance profiles.
     """
-    result = []
+    result = {}
     for cache in caches:
         shared_jobs = [j for j in running_jobs if j.cpu in cache.shared_with]
 
         cpi = task.get_cpi_alone()
         sum_cpi = sum(cpi / j.task.get_cpi_alone() for j in shared_jobs)
-        tmp = [r*sum_cpi for r in rd]
-
-        result.append(tmp)
-    r
+        rd, freq = task.mt.prd().items()#TODO
+		for i in range(freq):
+			tmp = [r*sum_cpi for r in rd]
+		result[tmp] = freq
+    return result
 
 
 def compute_instructions(task, running_jobs, duration):
     caches = task.cpu.caches
-    latencies = [c.latency for c in caches]
-    rdps = calc_rdps(caches, task, running_jobs) 
-    hit_rates = [capacity_miss_random(rdp, cache.size) for (rdp, cache) in zip(rdps, caches)]
+    latencies = [c.access_time for c in caches]
+    prds = calc_prds(caches, task, running_jobs) 
+    hit_rates = [capacity_miss_random(prd, cache.size) for (prd, cache) in zip(prds, caches)]
     return duration / calc_cpi(hit_rates, latencies)
 
 def penalty_to_latency(penalty_memaccess, penalties):
@@ -153,7 +156,7 @@ def penalty_to_latency(penalty_memaccess, penalties):
     return latencies
    
 
-class RandomCache(AbstractExecutionTimeModel):
+class RancomCache(AbstractExecutionTimeModel):
     def __init__(self, sim, nb_processors):
         self.sim = sim
         self._nb_processors = nb_processors
@@ -175,7 +178,7 @@ class RandomCache(AbstractExecutionTimeModel):
                 task.set_cpi_alone(
                     proc,
                     cpi_alone(task, [c.size for c in caches], 
-                                [c.latency for c in caches])
+                                [c.access_time for c in caches])
                 )
 
     def update(self):

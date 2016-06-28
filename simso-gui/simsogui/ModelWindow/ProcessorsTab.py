@@ -107,7 +107,7 @@ class ProcessorsTable(QTableWidget):
 
     def etm_changed(self, etm):
         # TODO: the etm should specify the fields that maters.
-        if etm == 'cache':
+        if (etm == 'test') | (etm == 'cache'):
             self.horizontalHeader().showSection(4)
             self.horizontalHeader().showSection(5)
             self.horizontalHeader().hideSection(6)

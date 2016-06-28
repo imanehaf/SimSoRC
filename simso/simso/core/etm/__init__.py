@@ -17,5 +17,5 @@ execution_time_model_names = {
     'ACET': 'acet',
     'Cache Model': 'cache',
     'Fixed Penalty': 'fixedpenalty',
-	'Test' :'test'
+	'Random Cache' :'test'
 }
