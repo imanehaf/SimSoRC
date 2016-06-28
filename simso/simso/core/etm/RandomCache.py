@@ -7,31 +7,6 @@ from simso.core.etm.AbstractExecutionTimeModel \
 from numpy.polynomial import Polynomial as Poly
 
 
-def getReuse(ins):
-    """
-    Get reuse distance for given addresses.
-    """
-    # reuse distance
-    reuse = []
-    # previous instruction
-    prevIns = []
-    # previous instruction index number
-    prevNum = []
-
-    # prob. for instuctions
-    for i in range(len(ins)):
-        w = ins[i]
-        if w in prevIns:
-            K = i-prevNum[prevIns.index(w)]-1
-            reuse.append(K)
-            prevNum[prevIns.index(w)] = i
-        else: # first time use
-            prevIns.append(w)
-            prevNum.append(i)
-            reuse.append('inf')
-
-    return reuse
-
 def getHit(reuse, N):
     """
     Get hit probabilities using reuse distance and associativity.
@@ -40,11 +15,11 @@ def getHit(reuse, N):
     for K in reuse.keys():
         if K<N:
             P = (1-1.0/N)**K
-			for i in range(reuse[K]):
-				Phit.append(P)
+            for i in range(reuse[K]):
+                Phit.append(P)
         else:
-			for i in range(reuse[K]):
-				Phit.append(0)
+            for i in range(reuse[K]):
+                Phit.append(0)
     return Phit
 
 def add_time_prob(time, cycles, prob, cyclesP):
@@ -110,7 +85,7 @@ def capacity_miss_random(rd, cache_size):
 
 
 def cpi_alone(task, cache_sizes, latencies):
-    local_miss_rates = [capacity_miss_random(task.prd, cache_size)
+    local_miss_rates = [capacity_miss_random(task.rd.prd, cache_size)
                   for cache_size in cache_sizes]
 
     hit_rates = [0]*len(local_miss_rates)
@@ -128,23 +103,26 @@ def calc_prds(caches, task, running_jobs):
     Compute the interleaving reuse distance profiles.
     """
     result = {}
+    irds = []
     for cache in caches:
         shared_jobs = [j for j in running_jobs if j.cpu in cache.shared_with]
 
         cpi = task.get_cpi_alone()
         sum_cpi = sum(cpi / j.task.get_cpi_alone() for j in shared_jobs)
-        rd, freq = task.mt.prd().items()#TODO
-		for i in range(freq):
-			tmp = [r*sum_cpi for r in rd]
-		result[tmp] = freq
-    return result
+        for rd, freq in task.rd.prd.items():
+            if rd == 'inf':
+                result['inf'] = freq
+            else:
+                result[rd*sum_cpi] = freq
+        irds.append(result)
+    return irds
 
 
 def compute_instructions(task, running_jobs, duration):
     caches = task.cpu.caches
     latencies = [c.access_time for c in caches]
-    prds = calc_prds(caches, task, running_jobs) 
-    hit_rates = [capacity_miss_random(prd, cache.size) for (prd, cache) in zip(prds, caches)]
+    irds = calc_prds(caches, task, running_jobs) 
+    hit_rates = [capacity_miss_random(ird, cache.size) for (ird, cache) in zip(irds, caches)]
     return duration / calc_cpi(hit_rates, latencies)
 
 def penalty_to_latency(penalty_memaccess, penalties):
@@ -156,7 +134,7 @@ def penalty_to_latency(penalty_memaccess, penalties):
     return latencies
    
 
-class RancomCache(AbstractExecutionTimeModel):
+class RandomCache(AbstractExecutionTimeModel):
     def __init__(self, sim, nb_processors):
         self.sim = sim
         self._nb_processors = nb_processors
