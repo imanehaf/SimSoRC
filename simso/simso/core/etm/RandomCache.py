@@ -6,6 +6,7 @@ from simso.core.etm.AbstractExecutionTimeModel \
 # polynomial
 from numpy.polynomial import Polynomial as Poly
 
+import math
 
 def getHit(reuse, N):
     """
@@ -21,6 +22,61 @@ def getHit(reuse, N):
             for i in range(reuse[K]):
                 Phit.append(0)
     return Phit
+
+# fast calculation of convolutions
+def calc_speedup(Phit):
+    if Phit==[]:
+        return [0], [1]
+    
+    # sort prob. and then divide them into groups   
+    Phit.sort()
+    
+    tmp = [Phit[0]]
+    cycle = [0]
+    prob = [1]
+
+    #print 'Phit:', Phit
+    for i in range(len(Phit)-1):
+        if Phit[i]==Phit[i+1]:
+            tmp.append(Phit[i+1])
+        else:
+            cycle0, prob0 = conv_same(tmp)
+            cycle, prob = add_time_prob(cycle, cycle0, prob, prob0)
+            
+            # next group of prob.
+            tmp = [Phit[i+1]]
+
+    # last group of prob.
+    cycle0, prob0 = conv_same(tmp)
+    cycle, prob = add_time_prob(cycle, cycle0, prob, prob0)
+
+    return cycle, prob
+
+
+# convolution of the same ETP
+def conv_same(Phit):
+    val = math.log(len(Phit), 2)
+    if val % 1 == 0:
+        cycle, prob = conv_p2(Phit, int(val))
+    else:
+        # find index for power-of-two
+        ind = 2**int(val)
+        
+        cycle, prob = conv_p2(Phit[0:ind], int(val))
+        cycle0, prob0 = conv_same(Phit[ind:])
+        cycle, prob = add_time_prob(cycle, cycle0, prob, prob0)
+
+    return cycle, prob
+
+# convolution of power-of-two ETPs 
+def conv_p2(Phit, power):
+    cycle = [0, 1]
+    prob = [Phit[0], 1-Phit[0]]
+    for i in range(power):
+        cycle, prob = add_time_prob(cycle, cycle, prob, prob)   
+
+    return cycle, prob
+
 
 def add_time_prob(time, cycles, prob, cyclesP):
     """
@@ -67,12 +123,7 @@ def capacity_miss_random(rd, cache_size):
     Phit = getHit(rd, N)
  
     # miss counts and prob.
-    time = [0]
-    prob = [1.0]
-    for j in range(len(Phit)):
-        Nc = [0, 1]
-        Pdf = [Phit[j], 1-Phit[j]]
-        time, prob = add_time_prob(time, Nc, prob, Pdf)
+    time, prob = calc_speedup(Phit)
 
     # local miss ratio
     mr = 0
@@ -105,9 +156,9 @@ def calc_prds(caches, task, running_jobs):
     """
     Compute the interleaving reuse distance profiles.
     """
-    result = {}
     irds = []
     for cache in caches:
+        result = {}
         shared_jobs = [j for j in running_jobs if j.cpu in cache.shared_with]
 
         cpi = task.get_cpi_alone()
