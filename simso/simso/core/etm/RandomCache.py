@@ -162,7 +162,14 @@ def calc_prds(caches, task, running_jobs):
         shared_jobs = [j for j in running_jobs if j.cpu in cache.shared_with]
 
         cpi = task.get_cpi_alone()
-        sum_cpi = sum(cpi / j.task.get_cpi_alone() for j in shared_jobs)
+        if cache.type == 'instruction':
+            sum_cpi = sum(cpi / j.task.get_cpi_alone() for j in shared_jobs)
+        elif cache.type == 'data':
+            mix_j = 1.0*len(task.mt)/task.n_instr
+            mixs = [1.0*len(j.task.mt)/j.task.n_instr for j in shared_jobs]
+            print mixs
+            sum_cpi = sum((mix/mix_j)*(cpi / j.task.get_cpi_alone()) for j, mix in zip(shared_jobs, mixs))
+        
         for rd, freq in task.rd.prd.items():
             if rd == 'inf':
                 result['inf'] = freq
