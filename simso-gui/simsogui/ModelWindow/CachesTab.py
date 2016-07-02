@@ -5,7 +5,7 @@ import re
 
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QTableWidget, QTableWidgetItem, QHeaderView, \
-    QAbstractItemView, QMessageBox
+    QAbstractItemView, QMessageBox, QComboBox
 
 from .AddRemoveButtonBar import AddRemoveButtonBar
 from .Tab import Tab
@@ -36,11 +36,11 @@ class CachesTable(QTableWidget):
         self._manual_change = True
         self._configuration = configuration
         self._caches_list = configuration.caches_list
-        QTableWidget.__init__(self, len(self._caches_list), 5, parent)
+        QTableWidget.__init__(self, len(self._caches_list), 6, parent)
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
         self.setHorizontalHeaderLabels(["id", "Name", "Size", 'Access Time',
-                                        "Miss penalty"])
+                                        "Miss penalty", 'Type'])
         self.setVerticalHeaderLabels([""])
         self.verticalHeader().hide()
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -64,6 +64,14 @@ class CachesTable(QTableWidget):
         penalty_item.setFlags(penalty_item.flags() ^ (Qt.ItemIsEditable | Qt.ItemIsEnabled))
         self.setItem(row, 4, penalty_item)
         self.item(row, 4).setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        item = QComboBox(self)
+        for typ in ['data', 'instruction']:
+            item.addItem(typ)
+        item.setCurrentIndex(item.findText(cache.type))
+        item.currentIndexChanged.connect(
+            lambda x: self._cell_changed(row, 5))
+        self.setCellWidget(row, 5, item)
+        
         self._ignore_cell_changed = False
 
     def _cell_changed(self, row, col):
@@ -83,7 +91,9 @@ class CachesTable(QTableWidget):
             old_value = str(cache.size)
         elif col == 3:
             old_value = str(cache.access_time)
-
+        elif col == 5:
+            old_value = str(cache.type)
+			
         try:
             if col == 0:
                 identifier = int(self.item(row, col).text())
@@ -102,6 +112,8 @@ class CachesTable(QTableWidget):
                 cache.access_time = access_time
                 self._configuration.calc_penalty_cache()
                 self.update_penalties()
+            elif col ==5:
+                cache.type = str(self.cellWidget(row, col).currentText())
 
             self._configuration.conf_changed()
         except (ValueError, AssertionError):
@@ -156,7 +168,7 @@ class CachesTable(QTableWidget):
 
         name = "Cache" + str(identifier)
 
-        cache = Cache_LRU(name, identifier, 0, 0, 0)
+        cache = Cache_LRU(name, identifier, 0, 0, 0, "data")
         self._caches_list.append(cache)
         self.insertRow(row)
         self._add_cache_to_table(row, cache)

@@ -47,7 +47,7 @@ class Parser(object):
 
         for cache in caches:
             attr = cache.attributes
-            if attr['policy'].value == 'LRU' and attr['type'].value == 'data':
+            if attr['policy'].value == 'LRU':
                 access_time = 1
                 associativity = int(attr['size'].value)
                 if 'access_time' in attr:
@@ -56,7 +56,7 @@ class Parser(object):
                     associativity = int(attr['associativity'].value)
                 cache = Cache_LRU(attr['name'].value, int(attr['id'].value),
                                   int(attr['size'].value), associativity,
-                                  access_time)
+                                  access_time, attr['type'].value)
                 self.caches_list.append(cache)
             # TODO Généraliser aux autres types de cache.
 

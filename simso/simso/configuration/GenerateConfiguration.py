@@ -63,7 +63,7 @@ def generate_cache(top, caches_list, memory_access_time):
         SubElement(caches, 'cache', {'name': cache.name,
                                      'id': str(cache.identifier),
                                      'policy': "LRU",  # TODO
-                                     'type': "data",  # TODO
+                                     'type': str(cache.type),  # TODO
                                      'size': str(cache.size),
                                      'access_time': str(cache.access_time)})
     return caches
